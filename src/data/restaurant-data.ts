@@ -3,7 +3,7 @@ import { MenuItem, MenuCategory, AtmosphereSpace, RestaurantMeta, ChefPhilosophy
 export const RESTAURANT_DATA: RestaurantMeta = {
   nameAr: "أثِـيـر",
   nameEn: "ATHEER",
-  taglineAr: "حيث تلتقي الأرض بشهقة النكهة والأفق",
+  taglineAr: "حيث تلتقي أصالة الأرض بسحر الجمر",
   taglineEn: "Avant-Garde Gastronomy Between Earth & Fire",
   storyAr: [
     "لا نؤمن بالمألوف ولا بالتقاليد الصامتة. وُلدت 'أثير' كفضاء طهي طليعي يحتفي بلهب الجمر، وعصارة التربة البرية، وجرأة الابتكار الحسي الصادم.",

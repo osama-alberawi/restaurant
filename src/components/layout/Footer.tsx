@@ -23,10 +23,10 @@ export function Footer() {
               {lang === "ar" ? RESTAURANT_DATA.nameEn : RESTAURANT_DATA.nameAr}
             </span>
           </div>
-          <p className="text-[#8B9B9E] text-xs max-w-md font-light">
+          <p className="text-[#8B9B9E] text-xs max-w-md font-light leading-relaxed">
             {t(
-              `${RESTAURANT_DATA.taglineAr} — فضاء طهي طليعي يحتفي بلهب الجمر وعصارة الأرض.`,
-              `${RESTAURANT_DATA.taglineEn} — An avant-garde culinary sanctuary celebrating live embers, raw earth, and sensory tension.`
+              "حيث تلتقي أصالة الأرض بسحر الجمر — تجربة طهي معاصرة تحتفي بنكهات المشرق وعراقة الضيافة.",
+              "Where the essence of earth meets ember — an avant-garde gastronomic sanctuary celebrating Levantine heritage and hospitality."
             )}
           </p>
         </div>
