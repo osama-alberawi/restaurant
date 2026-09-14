@@ -175,7 +175,7 @@ export function AtmosphereSection() {
             <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[#8B9B9E]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]" />
               <span className="tracking-widest uppercase font-medium">
-                {t("معرض معماري حي • ٤ فضاءات", "LIVING ARCHITECTURAL GALLERY • 4 SANCTUARIES")}
+                {t("معرض معماري حي • ٤ أركان", "LIVING ARCHITECTURAL GALLERY • 4 SANCTUARIES")}
               </span>
             </div>
           </div>
@@ -312,7 +312,7 @@ export function AtmosphereSection() {
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]" />
                       <span className="tracking-widest uppercase font-semibold text-white">
-                        {t("اكتمال الفضاءات الأربعة", "ALL FOUR SANCTUARIES REVEALED")}
+                        {t("اكتمال الأركان الأربعة", "ALL FOUR SANCTUARIES REVEALED")}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#C85A32]">
@@ -416,7 +416,7 @@ export function AtmosphereSection() {
               </button>
             ) : (
               <div className="border-t border-white/10 pt-2 flex items-center justify-between text-[10px] font-mono text-[#8B9B9E]">
-                <span className="uppercase">{t("اكتمال الفضاءات", "Sanctuary Culmination")}</span>
+                <span className="uppercase">{t("اكتمال الأركان", "Sanctuary Culmination")}</span>
                 <span className="text-[#C85A32]">↓ {t("انتقل للحرفة", "Chef")}</span>
               </div>
             )}

@@ -37,14 +37,25 @@ export function MenuSection() {
     }
   });
 
-  // Auto-scroll active tab into center view on mobile tab strip
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
+
+  // Auto-scroll active tab into center view on mobile tab strip (container only, never window)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     const btn = tabRefs.current[activeCategoryId];
-    if (btn) {
-      btn.scrollIntoView({
+    const container = tabStripRef.current;
+    if (btn && container) {
+      const btnRect = btn.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const deltaX = (btnRect.left + btnRect.width / 2) - (containerRect.left + containerRect.width / 2);
+      container.scrollBy({
+        left: deltaX,
         behavior: "smooth",
-        inline: "center",
-        block: "nearest",
       });
     }
   }, [activeCategoryId]);
@@ -323,7 +334,10 @@ export function MenuSection() {
 
             {/* 2. Scrollable Category Tab Bar */}
             <div className="py-2 border-b border-white/10 shrink-0">
-              <div className="flex items-center gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-xs font-mono">
+              <div
+                ref={tabStripRef}
+                className="flex items-center gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-xs font-mono"
+              >
                 {MENU_CATEGORIES.map((cat, idx) => {
                   const isSelected = activeCategoryId === cat.id;
                   return (

@@ -25,8 +25,8 @@ export function Footer() {
           </div>
           <p className="text-[#8B9B9E] text-xs max-w-md font-light leading-relaxed">
             {t(
-              "حيث تلتقي أصالة الأرض بسحر الجمر — تجربة طهي معاصرة تحتفي بنكهات المشرق وعراقة الضيافة.",
-              "Where the essence of earth meets ember — an avant-garde gastronomic sanctuary celebrating Levantine heritage and hospitality."
+              "لقاء عراقة التراث بلهب الابتكار — وجهة استثنائية تحتفي بنكهات بلاد الشام وفنون الضيافة الرفيعة.",
+              "Where culinary heritage meets living flame — an exceptional sanctuary celebrating Levantine gastronomy and refined hospitality."
             )}
           </p>
         </div>

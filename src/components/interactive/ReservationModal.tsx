@@ -361,7 +361,7 @@ export function ReservationModal({ isOpen, onClose }: ReservationModalProps) {
 
                   <div>
                     <label className="block text-[11px] font-mono text-[#8B9B9E] mb-2 uppercase">
-                      {t("فضاء الجلوس المفضل", "Preferred Atmospheric Space")}
+                      {t("ركن الجلوس المفضل", "Preferred Dining Zone")}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {DINING_ZONES.map((zone) => (

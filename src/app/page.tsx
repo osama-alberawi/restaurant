@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useActiveSection } from "@/hooks/useActiveSection";
 import { AmbientBackdrop } from "@/components/interactive/AmbientBackdrop";
 import { Navbar } from "@/components/layout/Navbar";
@@ -16,6 +16,17 @@ import { ReservationModal } from "@/components/interactive/ReservationModal";
 export default function HomePage() {
   const activeState = useActiveSection();
   const [isReservationOpen, setIsReservationOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      if (!window.location.hash) {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, []);
 
   return (
     <div className="relative min-h-screen selection:bg-[#C85A32] selection:text-white">

@@ -90,7 +90,7 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
               </h3>
               <p className="text-[#EAE6DF]/80 text-xs font-light mt-1.5 leading-relaxed">
                 {t(
-                  "اختر فضاء الجلوس المفضل لديك وسيقوم منسق الضيافة بترتيب أدق التفاصيل لراحتك.",
+                  "اختر ركن الجلوس المفضل لديك وسيقوم منسق الضيافة بترتيب أدق التفاصيل لراحتك.",
                   "Select your preferred sanctuary and our maître d' will curate every nuance of your visit."
                 )}
               </p>
@@ -175,7 +175,7 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
               </h3>
               <p className="text-[#EAE6DF]/80 text-xs xl:text-sm font-light leading-relaxed">
                 {t(
-                  "اختر فضاء الجلوس المفضل لديك وسيقوم منسق الضيافة بترتيب أدق التفاصيل لراحتك وتخصيص مسار تذوق فريد.",
+                  "اختر ركن الجلوس المفضل لديك وسيقوم منسق الضيافة بترتيب أدق التفاصيل لراحتك وتخصيص مسار تذوق فريد.",
                   "Select your preferred atmospheric sanctuary and our maître d' will orchestrate every nuance of your culinary journey."
                 )}
               </p>
