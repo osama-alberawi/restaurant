@@ -1,26 +1,105 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-slate-verdigris: #0E1416;
+  --color-pine-charcoal: #151F22;
+  --color-scorched-persimmon: #C85A32;
+  --color-calcified-linen: #EAE6DF;
+  --color-calcified-ivory: #F4F1EA;
+  --color-muted-slate: #8B9B9E;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  background-color: var(--color-slate-verdigris);
+  color: var(--color-calcified-ivory);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-slate-verdigris);
+  color: var(--color-calcified-ivory);
+  overflow-x: hidden;
+  selection-background-color: var(--color-scorched-persimmon);
+  selection-color: #ffffff;
 }
+
+/* Custom architectural hairline scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0E1416;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E2B2E;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C85A32;
+}
+
+/* Hairline rule utility */
+.border-hairline {
+  border-width: 1px;
+  border-color: rgba(234, 230, 223, 0.12);
+}
+
+/* Arabic Typography Safeguards: Never compress letter-spacing in cursive Arabic script */
+[dir="rtl"],
+html[lang="ar"] {
+  letter-spacing: normal;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6,
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] h5,
+html[lang="ar"] h6 {
+  letter-spacing: normal !important;
+}
+
+/* Prevent negative letter spacing that causes Arabic glyph collisions */
+[dir="rtl"] .tracking-tighter,
+[dir="rtl"] .tracking-tight,
+html[lang="ar"] .tracking-tighter,
+html[lang="ar"] .tracking-tight {
+  letter-spacing: 0em !important;
+}
+
+/* Arabic Display Typography Line-Height & Font Style Safeguards */
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3 {
+  letter-spacing: normal !important;
+  font-style: normal !important;
+}
+
+/* Ensure display Arabic headlines maintain robust line height and breathing room */
+[dir="rtl"] .ar-hero-headline,
+html[lang="ar"] .ar-hero-headline {
+  line-height: 1.55;
+}
+
+/* Eliminate browser focus outline rectangles on buttons */
+button,
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
