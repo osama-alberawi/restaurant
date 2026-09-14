@@ -156,7 +156,7 @@ export function ReservationModal({ isOpen, onClose }: ReservationModalProps) {
               <div>
                 <div className="mb-8">
                   <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#C85A32] block mb-1">
-                    ATHEER ATELIER // TABLE RESERVATION
+                    RANEEM ATELIER // TABLE RESERVATION
                   </span>
                   <h3 className="text-3xl font-black text-white">
                     {lang === "ar"
@@ -343,7 +343,7 @@ export function ReservationModal({ isOpen, onClose }: ReservationModalProps) {
                                 }}
                                 className="hover:text-white transition-colors"
                               >
-                                {t("موسم أثير (20 سبتمبر)", "SEASON DEBUT (SEP 20)")}
+                                {t("موسم رنيم (20 سبتمبر)", "SEASON DEBUT (SEP 20)")}
                               </button>
                               <button
                                 type="button"

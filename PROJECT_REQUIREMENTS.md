@@ -1,7 +1,7 @@
-﻿# PROJECT REQUIREMENTS: Creative Restaurant Landing Page
+# PROJECT REQUIREMENTS: Creative Restaurant Landing Page
 
 ## 1. Project Overview & Core Purpose (Product-First Shift)
-A real, premier restaurant website for "أثِـيـر | ATHEER" — an avant-garde fine-dining destination in Riyadh.
+A real, premier restaurant website for "رَنِـيـم | RANEEM" — an avant-garde fine-dining destination in Riyadh.
 The primary purpose is NOT an abstract cinematic portfolio; it is an editorial, menu-centric restaurant experience designed to answer the visitor's core question: "What can I eat here, what are the culinary creations, and how do I book?"
 
 ## 2. Core Functional Requirements (Must Have)

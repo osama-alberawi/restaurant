@@ -25,12 +25,12 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "أثِـيـر | ATHEER — Haute Gastronomie & Culinary Arts",
+  title: "رَنِـيـم | RANEEM — Haute Gastronomie & Culinary Arts",
   description: "رحلة طهي حسيّة تُعانق الأفق والذاكرة في أجواء معاصرة وفخمة تجمع بين الأصالة والابتكار في عَمّان.",
-  keywords: ["مطعم فاخر", "أثير", "عمان", "الأردن", "قائمة تذوق", "Fine Dining Amman", "Contemporary Gastronomy Jordan"],
+  keywords: ["مطعم فاخر", "رنيم", "عمان", "الأردن", "قائمة تذوق", "Fine Dining Amman", "Contemporary Gastronomy Jordan"],
   openGraph: {
-    title: "أثِـيـر | تجربة طهي حسية فاخرة",
-    description: "استكشف أطباق التوقيع والأجواء الساحرة في مطعم أثير عَمّان.",
+    title: "رَنِـيـم | تجربة طهي حسية فاخرة",
+    description: "استكشف أطباق التوقيع والأجواء الساحرة في مطعم رنيم عَمّان.",
     type: "website",
     locale: "ar_JO",
   },

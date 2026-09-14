@@ -92,7 +92,6 @@ export function AtmosphereSection() {
 
   return (
     <section
-      id="atmosphere"
       ref={containerRef}
       className="relative w-full h-[220vh] text-[#EAE6DF] bg-[#0E1416]"
     >

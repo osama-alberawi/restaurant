@@ -1,12 +1,12 @@
 import { MenuItem, MenuCategory, AtmosphereSpace, RestaurantMeta, ChefPhilosophy } from "@/lib/types";
 
 export const RESTAURANT_DATA: RestaurantMeta = {
-  nameAr: "أثِـيـر",
-  nameEn: "ATHEER",
+  nameAr: "رَنِـيـم",
+  nameEn: "RANEEM",
   taglineAr: "لقاء عراقة التراث بلهب الابتكار",
   taglineEn: "Avant-Garde Gastronomy Between Earth & Fire",
   storyAr: [
-    "لا نؤمن بالمألوف ولا بالتقاليد الصامتة. وُلدت 'أثير' كوجهة طهي استثنائية تحتفي بلهب الجمر، وعصارة التربة البرية، وجرأة الابتكار الحسي الراقي.",
+    "لا نؤمن بالمألوف ولا بالتقاليد الصامتة. وُلدت 'رنيم' كوجهة طهي استثنائية تحتفي بلهب الجمر، وعصارة التربة البرية، وجرأة الابتكار الحسي الراقي.",
     "كل طبق هو لوحة حرارية تُصنع يدوياً على حطب الزيتون المعتق، وتُتبّل بملح الصوان المستخرج من باطن الأرض، في مواجهة مباشرة مع حواس الضيف.",
     "هنا، الوقت ليس مقياساً للانتظار، بل هو عنصر طهي ناضج يُعتق النكهة ويعيد تعريف الهوية الغذائية برؤية معاصرة غير مسبوقة."
   ],
@@ -476,7 +476,7 @@ export const MENU_ITEMS: MenuItem[] = [
     ingredients: ["لحم بقري مفروم باليد", "شيدر معتق", "خس وطماطم طازجة", "بطاطا مقلية"],
     ingredientsEn: ["Hand-Ground Prime Beef", "Aged Cheddar", "Crisp Lettuce & Tomato", "Hand-Cut Fries"],
     image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85",
-    pairingNote: "صوص أثير الخاص بالكمأة",
+    pairingNote: "صوص رنيم الخاص بالكمأة",
     pairingNoteEn: "House truffle emulsion"
   },
 

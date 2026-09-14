@@ -23,7 +23,7 @@ export function PhilosophySection() {
   const axisY = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [15, 0, 0, -15]);
 
   const storyEn = [
-    "We believe neither in conventional menus nor in passive silence. ATHEER was born as an avant-garde culinary space celebrating the raw heat of embers, the wild sap of our soil, and radical sensory contrast.",
+    "We believe neither in conventional menus nor in passive silence. RANEEM was born as an avant-garde culinary space celebrating the raw heat of embers, the wild sap of our soil, and radical sensory contrast.",
     "Every plate is a thermal canvas forged over aged olive and citrus wood, seasoned with native flint salt, engaging directly with our guests' senses.",
     "Time here is not a metric of delay, but an active culinary ingredient maturing flavor and redefining gastronomic heritage."
   ];
@@ -87,7 +87,7 @@ export function PhilosophySection() {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0E1416] via-[#0E1416]/30 to-transparent" />
             <div className="absolute bottom-3 inset-x-3 rtl:text-right ltr:text-left">
               <span className="text-[10px] font-mono text-[#C85A32] tracking-[0.25em] uppercase block font-semibold">
-                ATHEER FIRE ARCHIVE
+                RANEEM FIRE ARCHIVE
               </span>
               <p className="text-xs text-[#F4F1EA] font-light mt-0.5 leading-snug">
                 {t(
@@ -131,7 +131,7 @@ export function PhilosophySection() {
             {/* Editorial Caption Plate */}
             <div className="absolute bottom-4 inset-x-5 rtl:text-right ltr:text-left">
               <span className="text-[10px] font-mono text-[#C85A32] tracking-[0.25em] uppercase block font-semibold">
-                ATHEER FIRE ARCHIVE
+                RANEEM FIRE ARCHIVE
               </span>
               <p className="text-xs text-[#F4F1EA] mt-1 font-light leading-snug">
                 &quot;{t(

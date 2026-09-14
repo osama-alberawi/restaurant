@@ -21,7 +21,6 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
 
   return (
     <section
-      id="visit"
       ref={containerRef}
       className="w-full min-h-[100svh] flex flex-col justify-center pt-20 pb-6 px-6 sm:px-8 lg:px-12 max-w-7xl mx-auto rtl:text-right ltr:text-left will-change-transform"
     >
@@ -86,7 +85,7 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
               <h3 className={`text-xl text-white ${
                 lang === "ar" ? "font-extrabold leading-[1.3] tracking-normal" : "font-black leading-tight"
               }`}>
-                {t("احجز مقعدك في أثير", "Reserve Your Table")}
+                {t("احجز مقعدك في رنيم", "Reserve Your Table")}
               </h3>
               <p className="text-[#EAE6DF]/80 text-xs font-light mt-1.5 leading-relaxed">
                 {t(
@@ -171,7 +170,7 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
               <h3 className={`text-2xl xl:text-3xl text-white ${
                 lang === "ar" ? "font-extrabold leading-[1.3] tracking-normal" : "font-black leading-tight"
               }`}>
-                {t("احجز مقعدك في أثير", "Reserve Your Table At Atheer")}
+                {t("احجز مقعدك في رنيم", "Reserve Your Table At Raneem")}
               </h3>
               <p className="text-[#EAE6DF]/80 text-xs xl:text-sm font-light leading-relaxed">
                 {t(
@@ -267,7 +266,7 @@ export function VisitSection({ onOpenReservation }: VisitSectionProps) {
           <div className="flex items-center gap-3">
             <span className="w-1.5 h-1.5 rounded-full bg-[#8B9B9E]/50" />
             <span className="tracking-widest uppercase text-[#EAE6DF]/70 text-[11px]">
-              {t("أثير • تجربة تذوق حسية فريدة في قلب عَمّان", "ATHEER • AN ART-DIRECTED CULINARY EXPERIENCE")}
+              {t("رنيم • تجربة تذوق حسية فريدة في قلب عَمّان", "RANEEM • AN ART-DIRECTED CULINARY EXPERIENCE")}
             </span>
           </div>
           <span className="text-[10px] text-stone-500 font-mono tracking-widest uppercase">

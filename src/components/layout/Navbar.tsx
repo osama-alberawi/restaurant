@@ -142,7 +142,7 @@ export function Navbar({ activeState, onOpenReservation }: NavbarProps) {
             className="flex items-center gap-3.5 group text-right focus:outline-none"
           >
             <span className="w-8 h-8 rounded-full bg-[#C85A32] text-white font-black text-xs flex items-center justify-center tracking-tighter shadow-[0_2px_12px_rgba(200,90,50,0.4)] group-hover:scale-105 transition-transform">
-              {lang === "ar" ? "أ" : "A"}
+              {lang === "ar" ? "ر" : "R"}
             </span>
             <div className="flex flex-col text-right">
               <span className={`text-base font-black tracking-wide leading-none transition-colors ${navStyle.brandText}`}>
@@ -258,7 +258,7 @@ export function Navbar({ activeState, onOpenReservation }: NavbarProps) {
             <div className={`flex items-center justify-between border-b ${modalStyle.border} pb-4`}>
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-[#C85A32] text-white font-black text-xs flex items-center justify-center shadow-sm">
-                  {lang === "ar" ? "أ" : "A"}
+                  {lang === "ar" ? "ر" : "R"}
                 </span>
                 <span className={`text-base font-black tracking-wide ${modalStyle.brandText}`}>
                   {lang === "ar" ? RESTAURANT_DATA.nameAr : RESTAURANT_DATA.nameEn}
