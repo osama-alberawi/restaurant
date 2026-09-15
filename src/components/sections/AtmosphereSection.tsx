@@ -18,10 +18,20 @@ export function AtmosphereSection() {
   const stageRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(0);
+  const [isDesktop, setIsDesktop] = useState(false);
   const isProgrammaticScroll = useRef(false);
   const isCoolingDown = useRef(false);
-  const touchStartPos = useRef<{ x: number; y: number; time: number } | null>(null);
   const { lang, t, formatNumber } = useLanguage();
+
+  // Track desktop vs mobile view accurately
+  useEffect(() => {
+    const updateMedia = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    updateMedia();
+    window.addEventListener("resize", updateMedia);
+    return () => window.removeEventListener("resize", updateMedia);
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -44,8 +54,7 @@ export function AtmosphereSection() {
   // Synchronize active index with continuous scroll travel across the 4 spaces.
   // On mobile (<1024px), continuous scrubbing is disabled so inertial swipe momentum never skips spaces.
   useMotionValueEvent(smoothProgress, "change", (latest) => {
-    if (isProgrammaticScroll.current) return;
-    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+    if (!isDesktop || isProgrammaticScroll.current) return;
 
     let idx = 0;
     if (latest < 0.25) idx = 0;
@@ -119,43 +128,91 @@ export function AtmosphereSection() {
     selectSpaceStep(idx);
   };
 
-  // Mobile swipe listener: Guarantees 1 swipe = exactly 1 space transition
+  // Mobile swipe listener: Guarantees 1 swipe = maximum 1 space transition
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
+    interface TouchData {
+      startX: number;
+      startY: number;
+      startIdx: number;
+      handled: boolean;
+    }
+
+    let touchData: TouchData | null = null;
+
     const onTouchStart = (e: TouchEvent) => {
-      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (window.innerWidth >= 1024) return;
       if (e.touches.length !== 1) return;
-      touchStartPos.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        time: Date.now(),
+
+      const touch = e.touches[0];
+      touchData = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        startIdx: activeIndexRef.current,
+        handled: false,
       };
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
-      if (!touchStartPos.current || !containerRef.current) return;
+      if (window.innerWidth >= 1024 || !touchData || !containerRef.current) return;
+      if (touchData.handled) {
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
 
       const rect = containerRef.current.getBoundingClientRect();
       const isPinned = rect.top <= 15 && rect.bottom >= window.innerHeight - 15;
       if (!isPinned) return;
 
-      const deltaY = touchStartPos.current.y - e.touches[0].clientY;
-      const deltaX = touchStartPos.current.x - e.touches[0].clientX;
+      const touch = e.touches[0];
+      const deltaY = touchData.startY - touch.clientY; // positive = swipe DOWN (finger moved up)
+      const deltaX = touchData.startX - touch.clientX; // positive = swipe LEFT
 
-      const currIdx = activeIndexRef.current;
-      // If on first space and dragging down (wanting to go to previous section)
-      if (currIdx === 0 && deltaY < -20) {
-        return;
+      // Section boundary releases
+      if (touchData.startIdx === 0 && deltaY < -25) {
+        return; // Allow natural exit back to Menu
       }
-      // If on last space and dragging up (wanting to go to next section)
-      if (currIdx === ATMOSPHERE_SPACES.length - 1 && deltaY > 20) {
-        return;
+      if (touchData.startIdx === ATMOSPHERE_SPACES.length - 1 && deltaY > 25) {
+        return; // Allow natural exit forward to Chef
       }
 
-      // Intercept touch to prevent multi-space inertial window scrolling
+      const SWIPE_THRESHOLD = 45;
+      const isVertical = Math.abs(deltaY) >= SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX);
+      const isHorizontal = Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) >= Math.abs(deltaY);
+
+      if (isVertical) {
+        if (deltaY >= SWIPE_THRESHOLD) {
+          if (touchData.startIdx < ATMOSPHERE_SPACES.length - 1) {
+            touchData.handled = true;
+            if (e.cancelable) e.preventDefault();
+            selectSpaceStep(touchData.startIdx + 1);
+          }
+        } else if (deltaY <= -SWIPE_THRESHOLD) {
+          if (touchData.startIdx > 0) {
+            touchData.handled = true;
+            if (e.cancelable) e.preventDefault();
+            selectSpaceStep(touchData.startIdx - 1);
+          }
+        }
+      } else if (isHorizontal) {
+        if (deltaX >= SWIPE_THRESHOLD) {
+          if (touchData.startIdx < ATMOSPHERE_SPACES.length - 1) {
+            touchData.handled = true;
+            if (e.cancelable) e.preventDefault();
+            selectSpaceStep(touchData.startIdx + 1);
+          }
+        } else if (deltaX <= -SWIPE_THRESHOLD) {
+          if (touchData.startIdx > 0) {
+            touchData.handled = true;
+            if (e.cancelable) e.preventDefault();
+            selectSpaceStep(touchData.startIdx - 1);
+          }
+        }
+      }
+
+      // Prevent outer browser momentum from flinging across multiple spaces during an active gesture
       if (Math.abs(deltaY) > 8 || Math.abs(deltaX) > 8) {
         if (e.cancelable) {
           e.preventDefault();
@@ -164,12 +221,12 @@ export function AtmosphereSection() {
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
-      if (!touchStartPos.current || !containerRef.current) return;
+      if (window.innerWidth >= 1024 || !touchData || !containerRef.current) return;
 
-      const start = touchStartPos.current;
-      touchStartPos.current = null;
+      const start = touchData;
+      touchData = null;
 
+      if (start.handled) return;
       if (isCoolingDown.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
@@ -177,52 +234,41 @@ export function AtmosphereSection() {
       if (!isPinned) return;
 
       const endTouch = e.changedTouches[0];
-      const deltaY = start.y - endTouch.clientY; // positive = swipe UP (scroll DOWN / NEXT)
-      const deltaX = start.x - endTouch.clientX;
-      const MIN_SWIPE = 35;
+      const deltaY = start.startY - endTouch.clientY;
+      const deltaX = start.startX - endTouch.clientX;
+      const SWIPE_THRESHOLD = 38;
 
-      const isVertical = Math.abs(deltaY) >= MIN_SWIPE && Math.abs(deltaY) > Math.abs(deltaX);
-      const isHorizontal = Math.abs(deltaX) >= MIN_SWIPE && Math.abs(deltaX) >= Math.abs(deltaY);
-
-      const currIdx = activeIndexRef.current;
+      const isVertical = Math.abs(deltaY) >= SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX);
+      const isHorizontal = Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) >= Math.abs(deltaY);
 
       if (isVertical) {
-        if (deltaY > MIN_SWIPE) {
-          // Swipe DOWN (Finger up) -> Transition to next space by strictly 1 step
-          if (currIdx < ATMOSPHERE_SPACES.length - 1) {
-            selectSpaceStep(currIdx + 1);
+        if (deltaY > SWIPE_THRESHOLD) {
+          if (start.startIdx < ATMOSPHERE_SPACES.length - 1) {
+            selectSpaceStep(start.startIdx + 1);
           } else {
-            // Already at last space -> Smooth scroll to Chapter 04 (Chef)
             isCoolingDown.current = true;
             setTimeout(() => { isCoolingDown.current = false; }, 600);
             const nextEl = document.getElementById("chef");
-            if (nextEl) {
-              nextEl.scrollIntoView({ behavior: "smooth" });
-            }
+            if (nextEl) nextEl.scrollIntoView({ behavior: "smooth" });
           }
-        } else if (deltaY < -MIN_SWIPE) {
-          // Swipe UP (Finger down) -> Transition to previous space by strictly 1 step
-          if (currIdx > 0) {
-            selectSpaceStep(currIdx - 1);
+        } else if (deltaY < -SWIPE_THRESHOLD) {
+          if (start.startIdx > 0) {
+            selectSpaceStep(start.startIdx - 1);
           } else {
-            // Already at first space -> Smooth scroll to Chapter 02 (Menu)
             isCoolingDown.current = true;
             setTimeout(() => { isCoolingDown.current = false; }, 600);
             const prevEl = document.getElementById("menu");
-            if (prevEl) {
-              prevEl.scrollIntoView({ behavior: "smooth" });
-            }
+            if (prevEl) prevEl.scrollIntoView({ behavior: "smooth" });
           }
         }
       } else if (isHorizontal) {
-        // Horizontal swipe: left = next space, right = prev space
-        if (deltaX > MIN_SWIPE) {
-          if (currIdx < ATMOSPHERE_SPACES.length - 1) {
-            selectSpaceStep(currIdx + 1);
+        if (deltaX > SWIPE_THRESHOLD) {
+          if (start.startIdx < ATMOSPHERE_SPACES.length - 1) {
+            selectSpaceStep(start.startIdx + 1);
           }
-        } else if (deltaX < -MIN_SWIPE) {
-          if (currIdx > 0) {
-            selectSpaceStep(currIdx - 1);
+        } else if (deltaX < -SWIPE_THRESHOLD) {
+          if (start.startIdx > 0) {
+            selectSpaceStep(start.startIdx - 1);
           }
         }
       }
@@ -237,7 +283,7 @@ export function AtmosphereSection() {
       stage.removeEventListener("touchmove", onTouchMove);
       stage.removeEventListener("touchend", onTouchEnd);
     };
-  }, []);
+  }, [isDesktop]);
 
   const activeSpace = ATMOSPHERE_SPACES[activeIndex] || ATMOSPHERE_SPACES[0];
   const nextSpace =
