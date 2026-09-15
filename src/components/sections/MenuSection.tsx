@@ -8,28 +8,9 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export function MenuSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const [activeCategoryId, setActiveCategoryId] = useState<MenuCategoryId>("starters");
-  const activeCategoryIdRef = useRef<MenuCategoryId>("starters");
-  const [isDesktop, setIsDesktop] = useState(false);
-  const isProgrammaticScroll = useRef(false);
   const { lang, t, formatNumber } = useLanguage();
-
-  // Track desktop vs mobile view accurately
-  useEffect(() => {
-    const updateMedia = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    updateMedia();
-    window.addEventListener("resize", updateMedia);
-    return () => window.removeEventListener("resize", updateMedia);
-  }, []);
-
-  // Keep ref in sync with state
-  useEffect(() => {
-    activeCategoryIdRef.current = activeCategoryId;
-  }, [activeCategoryId]);
 
   // Unified calibrated scroll over the pinned track
   const { scrollYProgress } = useScroll({
@@ -37,25 +18,22 @@ export function MenuSection() {
     offset: ["start start", "end end"],
   });
 
-  // Physically damped spring for desktop continuous scroll choreography
+  // Physically damped spring to guarantee smooth, jitter-free scroll choreography
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 90,
     damping: 24,
     mass: 0.6,
   });
 
-  // Desktop only: map continuous scroll progress into category index.
-  // On mobile (<1024px), continuous scrubbing is 100% disabled so inertial swipe momentum can NEVER skip chapters.
+  // Map damped continuous scroll progress into category index across the pinned track
+  // 7 categories unfold smoothly across 0.0 -> 1.0
   useMotionValueEvent(smoothProgress, "change", (latest) => {
-    if (!isDesktop || isProgrammaticScroll.current) return;
-
     const total = MENU_CATEGORIES.length;
     const clampedRatio = Math.min(0.999, Math.max(0, latest));
     const catIndex = Math.min(total - 1, Math.max(0, Math.floor(clampedRatio * total)));
     const cat = MENU_CATEGORIES[catIndex];
-    if (cat && cat.id !== activeCategoryIdRef.current) {
+    if (cat && cat.id !== activeCategoryId) {
       setActiveCategoryId(cat.id);
-      activeCategoryIdRef.current = cat.id;
     }
   });
 
@@ -90,213 +68,20 @@ export function MenuSection() {
       ? MENU_CATEGORIES[activeCategoryIndex + 1]
       : null;
 
-  // Discrete single-chapter transition (Maximum 1 chapter change per call)
-  const transitionToCategory = (targetIdx: number) => {
-    if (targetIdx < 0 || targetIdx >= MENU_CATEGORIES.length) return;
-
-    const targetCat = MENU_CATEGORIES[targetIdx];
-    setActiveCategoryId(targetCat.id);
-    activeCategoryIdRef.current = targetCat.id;
-
-    if (containerRef.current) {
+  // Category selection via click (works on both desktop spine and mobile tabs)
+  const handleSelectCategory = (catId: MenuCategoryId) => {
+    setActiveCategoryId(catId);
+    const idx = MENU_CATEGORIES.findIndex((c) => c.id === catId);
+    if (idx !== -1 && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const containerTop = rect.top + scrollTop;
       const totalScrollable = containerRef.current.offsetHeight - window.innerHeight;
-      const targetRatio = (targetIdx + 0.5) / MENU_CATEGORIES.length;
+      const targetRatio = (idx + 0.5) / MENU_CATEGORIES.length;
       const targetY = containerTop + totalScrollable * targetRatio;
-
-      isProgrammaticScroll.current = true;
       window.scrollTo({ top: targetY, behavior: "smooth" });
-      setTimeout(() => {
-        isProgrammaticScroll.current = false;
-      }, 450);
     }
   };
-
-  // Category selection via click (desktop spine or mobile tabs)
-  const handleSelectCategory = (catId: MenuCategoryId) => {
-    const idx = MENU_CATEGORIES.findIndex((c) => c.id === catId);
-    if (idx !== -1) {
-      transitionToCategory(idx);
-    }
-  };
-
-  // Mobile Editorial Chapter Progression Engine
-  // Core Rule: 1 User Gesture = Maximum 1 Chapter Transition
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    interface TouchData {
-      startX: number;
-      startY: number;
-      startIdx: number;
-      isInsideDishes: boolean;
-      handled: boolean;
-    }
-
-    let touchData: TouchData | null = null;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (window.innerWidth >= 1024) return;
-      if (e.touches.length !== 1) return;
-
-      const touch = e.touches[0];
-      const dishesEl = (e.target as HTMLElement)?.closest?.(".mobile-dishes-container") as HTMLElement | null;
-      const currIdx = MENU_CATEGORIES.findIndex((c) => c.id === activeCategoryIdRef.current);
-
-      touchData = {
-        startX: touch.clientX,
-        startY: touch.clientY,
-        startIdx: currIdx !== -1 ? currIdx : 0,
-        isInsideDishes: !!dishesEl,
-        handled: false,
-      };
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (window.innerWidth >= 1024 || !touchData) return;
-      if (touchData.handled) {
-        if (e.cancelable) e.preventDefault();
-        return;
-      }
-
-      const touch = e.touches[0];
-      const deltaY = touchData.startY - touch.clientY; // positive = swipe DOWN (finger moved up)
-      const deltaX = touchData.startX - touch.clientX; // positive = swipe LEFT
-
-      // 1. If touch originated inside scrollable dishes list, allow natural dish browsing
-      if (touchData.isInsideDishes) {
-        const dishesEl = (e.target as HTMLElement)?.closest?.(".mobile-dishes-container") as HTMLElement | null;
-        if (dishesEl) {
-          const maxScroll = dishesEl.scrollHeight - dishesEl.clientHeight;
-          if (maxScroll > 6) {
-            // Finger moving UP (scrolling DOWN through dishes list)
-            if (deltaY > 0 && dishesEl.scrollTop < maxScroll - 4) {
-              return; // Browse dishes naturally
-            }
-            // Finger moving DOWN (scrolling UP through dishes list)
-            if (deltaY < 0 && dishesEl.scrollTop > 4) {
-              return; // Browse dishes naturally
-            }
-          }
-        }
-      }
-
-      // 2. Chapter 01 & Chapter 07 Section boundary releases
-      if (touchData.startIdx === 0 && deltaY < -25) {
-        return; // Allow natural exit back to Philosophy
-      }
-      if (touchData.startIdx === MENU_CATEGORIES.length - 1 && deltaY > 25) {
-        return; // Allow natural exit forward to Atmosphere
-      }
-
-      // 3. Evaluate intentional chapter turn threshold
-      const SWIPE_THRESHOLD = 45;
-      const isVertical = Math.abs(deltaY) >= SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX);
-      const isHorizontal = Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) >= Math.abs(deltaY);
-
-      if (isVertical) {
-        if (deltaY >= SWIPE_THRESHOLD) {
-          // Downward gesture -> Advance to nearest adjacent chapter (+1 ONLY)
-          if (touchData.startIdx < MENU_CATEGORIES.length - 1) {
-            touchData.handled = true;
-            if (e.cancelable) e.preventDefault();
-            transitionToCategory(touchData.startIdx + 1);
-          }
-        } else if (deltaY <= -SWIPE_THRESHOLD) {
-          // Upward gesture -> Return to nearest adjacent chapter (-1 ONLY)
-          if (touchData.startIdx > 0) {
-            touchData.handled = true;
-            if (e.cancelable) e.preventDefault();
-            transitionToCategory(touchData.startIdx - 1);
-          }
-        }
-      } else if (isHorizontal) {
-        if (deltaX >= SWIPE_THRESHOLD) {
-          // Horizontal swipe left -> Next chapter (+1 ONLY)
-          if (touchData.startIdx < MENU_CATEGORIES.length - 1) {
-            touchData.handled = true;
-            if (e.cancelable) e.preventDefault();
-            transitionToCategory(touchData.startIdx + 1);
-          }
-        } else if (deltaX <= -SWIPE_THRESHOLD) {
-          // Horizontal swipe right -> Previous chapter (-1 ONLY)
-          if (touchData.startIdx > 0) {
-            touchData.handled = true;
-            if (e.cancelable) e.preventDefault();
-            transitionToCategory(touchData.startIdx - 1);
-          }
-        }
-      }
-
-      // Prevent outer browser momentum from flinging across multiple chapters during an active gesture
-      if (Math.abs(deltaY) > 8 || Math.abs(deltaX) > 8) {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (window.innerWidth >= 1024 || !touchData) return;
-
-      const start = touchData;
-      touchData = null;
-
-      // If already resolved during touchmove, do not repeat
-      if (start.handled) return;
-
-      const endTouch = e.changedTouches[0];
-      const deltaY = start.startY - endTouch.clientY;
-      const deltaX = start.startX - endTouch.clientX;
-      const SWIPE_THRESHOLD = 38;
-
-      const isVertical = Math.abs(deltaY) >= SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX);
-      const isHorizontal = Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) >= Math.abs(deltaY);
-
-      if (isVertical) {
-        if (deltaY > SWIPE_THRESHOLD) {
-          if (start.startIdx < MENU_CATEGORIES.length - 1) {
-            transitionToCategory(start.startIdx + 1);
-          } else {
-            // Culmination at Chapter 07 -> Smooth descent into Chapter 03 (Atmosphere)
-            const nextEl = document.getElementById("atmosphere");
-            if (nextEl) nextEl.scrollIntoView({ behavior: "smooth" });
-          }
-        } else if (deltaY < -SWIPE_THRESHOLD) {
-          if (start.startIdx > 0) {
-            transitionToCategory(start.startIdx - 1);
-          } else {
-            // Apex at Chapter 01 -> Smooth return to Chapter 01 (Philosophy)
-            const prevEl = document.getElementById("philosophy");
-            if (prevEl) prevEl.scrollIntoView({ behavior: "smooth" });
-          }
-        }
-      } else if (isHorizontal) {
-        if (deltaX > SWIPE_THRESHOLD) {
-          if (start.startIdx < MENU_CATEGORIES.length - 1) {
-            transitionToCategory(start.startIdx + 1);
-          }
-        } else if (deltaX < -SWIPE_THRESHOLD) {
-          if (start.startIdx > 0) {
-            transitionToCategory(start.startIdx - 1);
-          }
-        }
-      }
-    };
-
-    stage.addEventListener("touchstart", onTouchStart, { passive: true });
-    stage.addEventListener("touchmove", onTouchMove, { passive: false });
-    stage.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      stage.removeEventListener("touchstart", onTouchStart);
-      stage.removeEventListener("touchmove", onTouchMove);
-      stage.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isDesktop]);
 
   // Format price as JOD with 2 decimals
   const formatPrice = (price: number) => {
@@ -312,10 +97,7 @@ export function MenuSection() {
       className="relative w-full h-[280vh] bg-[#0E1416] text-[#EAE6DF]"
     >
       {/* Pinned Spatial Viewport: Sits cleanly below floating navbar on all window heights */}
-      <div
-        ref={stageRef}
-        className="sticky top-0 h-[100svh] min-h-[100svh] w-full relative overflow-hidden flex flex-col justify-between pt-16 sm:pt-20 lg:pt-24 pb-4 sm:pb-5 px-4 sm:px-8 xl:px-14"
-      >
+      <div className="sticky top-0 h-[100svh] min-h-[100svh] w-full relative overflow-hidden flex flex-col justify-between pt-16 sm:pt-20 lg:pt-24 pb-4 sm:pb-5 px-4 sm:px-8 xl:px-14">
         
         {/* Active Editorial Monograph Container */}
         <motion.div
@@ -606,7 +388,7 @@ export function MenuSection() {
               </p>
 
               {/* Dishes List with AnimatePresence - ONLY active category dishes */}
-              <div className="mobile-dishes-container overflow-y-auto flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
+              <div className="overflow-y-auto flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeCategoryId}
