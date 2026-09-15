@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import {
   motion,
@@ -15,8 +15,18 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export function AtmosphereSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(0);
+  const isProgrammaticScroll = useRef(false);
+  const isCoolingDown = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number; time: number } | null>(null);
   const { lang, t, formatNumber } = useLanguage();
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   // Controlled scroll track across the pinned stage
   const { scrollYProgress } = useScroll({
@@ -31,20 +41,25 @@ export function AtmosphereSection() {
     mass: 0.6,
   });
 
-  // Synchronize active index with continuous scroll travel across the 4 spaces
+  // Synchronize active index with continuous scroll travel across the 4 spaces.
+  // On mobile (<1024px), continuous scrubbing is disabled so inertial swipe momentum never skips spaces.
   useMotionValueEvent(smoothProgress, "change", (latest) => {
+    if (isProgrammaticScroll.current) return;
+    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+
     let idx = 0;
     if (latest < 0.25) idx = 0;
     else if (latest < 0.50) idx = 1;
     else if (latest < 0.75) idx = 2;
     else idx = 3;
 
-    if (idx !== activeIndex) {
+    if (idx !== activeIndexRef.current) {
       setActiveIndex(idx);
+      activeIndexRef.current = idx;
     }
   });
 
-  // Continuous physical transforms for each of the 4 images
+  // Continuous physical transforms for each of the 4 images (Desktop)
   // Image 01: Monolith Salon
   const img0Opacity = useTransform(smoothProgress, [0.0, 0.20, 0.28], [1, 1, 0]);
   const img0Scale = useTransform(smoothProgress, [0.0, 0.20, 0.28], [1, 1, 0.94]);
@@ -72,17 +87,157 @@ export function AtmosphereSection() {
     { opacity: img3Opacity, scale: img3Scale, y: img3Y },
   ];
 
+  // Discrete single-step space selector
+  const selectSpaceStep = (idx: number) => {
+    if (idx < 0 || idx >= ATMOSPHERE_SPACES.length) return;
+    isCoolingDown.current = true;
+    setTimeout(() => {
+      isCoolingDown.current = false;
+    }, 450);
+
+    setActiveIndex(idx);
+    activeIndexRef.current = idx;
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const containerTop = rect.top + scrollTop;
+      const totalScrollable = containerRef.current.offsetHeight - window.innerHeight;
+      const targetRatio = (idx + 0.5) / ATMOSPHERE_SPACES.length;
+      const targetY = containerTop + totalScrollable * targetRatio;
+
+      isProgrammaticScroll.current = true;
+      window.scrollTo({ top: targetY, behavior: "smooth" });
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 500);
+    }
+  };
+
   // Jump smoothly to a specific perspective when clicking index or preview
   const handleSelectSpace = (idx: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const containerTop = rect.top + scrollTop;
-    const totalScrollable = containerRef.current.offsetHeight - window.innerHeight;
-    const targetRatio = (idx + 0.5) / ATMOSPHERE_SPACES.length;
-    const targetY = containerTop + totalScrollable * targetRatio;
-    window.scrollTo({ top: targetY, behavior: "smooth" });
+    selectSpaceStep(idx);
   };
+
+  // Mobile swipe listener: Guarantees 1 swipe = exactly 1 space transition
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (e.touches.length !== 1) return;
+      touchStartPos.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (!touchStartPos.current || !containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isPinned = rect.top <= 15 && rect.bottom >= window.innerHeight - 15;
+      if (!isPinned) return;
+
+      const deltaY = touchStartPos.current.y - e.touches[0].clientY;
+      const deltaX = touchStartPos.current.x - e.touches[0].clientX;
+
+      const currIdx = activeIndexRef.current;
+      // If on first space and dragging down (wanting to go to previous section)
+      if (currIdx === 0 && deltaY < -20) {
+        return;
+      }
+      // If on last space and dragging up (wanting to go to next section)
+      if (currIdx === ATMOSPHERE_SPACES.length - 1 && deltaY > 20) {
+        return;
+      }
+
+      // Intercept touch to prevent multi-space inertial window scrolling
+      if (Math.abs(deltaY) > 8 || Math.abs(deltaX) > 8) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (!touchStartPos.current || !containerRef.current) return;
+
+      const start = touchStartPos.current;
+      touchStartPos.current = null;
+
+      if (isCoolingDown.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isPinned = rect.top <= 15 && rect.bottom >= window.innerHeight - 15;
+      if (!isPinned) return;
+
+      const endTouch = e.changedTouches[0];
+      const deltaY = start.y - endTouch.clientY; // positive = swipe UP (scroll DOWN / NEXT)
+      const deltaX = start.x - endTouch.clientX;
+      const MIN_SWIPE = 35;
+
+      const isVertical = Math.abs(deltaY) >= MIN_SWIPE && Math.abs(deltaY) > Math.abs(deltaX);
+      const isHorizontal = Math.abs(deltaX) >= MIN_SWIPE && Math.abs(deltaX) >= Math.abs(deltaY);
+
+      const currIdx = activeIndexRef.current;
+
+      if (isVertical) {
+        if (deltaY > MIN_SWIPE) {
+          // Swipe DOWN (Finger up) -> Transition to next space by strictly 1 step
+          if (currIdx < ATMOSPHERE_SPACES.length - 1) {
+            selectSpaceStep(currIdx + 1);
+          } else {
+            // Already at last space -> Smooth scroll to Chapter 04 (Chef)
+            isCoolingDown.current = true;
+            setTimeout(() => { isCoolingDown.current = false; }, 600);
+            const nextEl = document.getElementById("chef");
+            if (nextEl) {
+              nextEl.scrollIntoView({ behavior: "smooth" });
+            }
+          }
+        } else if (deltaY < -MIN_SWIPE) {
+          // Swipe UP (Finger down) -> Transition to previous space by strictly 1 step
+          if (currIdx > 0) {
+            selectSpaceStep(currIdx - 1);
+          } else {
+            // Already at first space -> Smooth scroll to Chapter 02 (Menu)
+            isCoolingDown.current = true;
+            setTimeout(() => { isCoolingDown.current = false; }, 600);
+            const prevEl = document.getElementById("menu");
+            if (prevEl) {
+              prevEl.scrollIntoView({ behavior: "smooth" });
+            }
+          }
+        }
+      } else if (isHorizontal) {
+        // Horizontal swipe: left = next space, right = prev space
+        if (deltaX > MIN_SWIPE) {
+          if (currIdx < ATMOSPHERE_SPACES.length - 1) {
+            selectSpaceStep(currIdx + 1);
+          }
+        } else if (deltaX < -MIN_SWIPE) {
+          if (currIdx > 0) {
+            selectSpaceStep(currIdx - 1);
+          }
+        }
+      }
+    };
+
+    stage.addEventListener("touchstart", onTouchStart, { passive: true });
+    stage.addEventListener("touchmove", onTouchMove, { passive: false });
+    stage.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      stage.removeEventListener("touchstart", onTouchStart);
+      stage.removeEventListener("touchmove", onTouchMove);
+      stage.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
 
   const activeSpace = ATMOSPHERE_SPACES[activeIndex] || ATMOSPHERE_SPACES[0];
   const nextSpace =
@@ -99,7 +254,10 @@ export function AtmosphereSection() {
       <div className="absolute inset-0 bg-[#0E1416] -z-20 shadow-2xl" />
 
       {/* Pinned Stage: Standard Single Viewport Stage Scale (Matching Visit & Hero) */}
-      <div className="sticky top-0 h-[100svh] min-h-[100svh] w-full flex flex-col justify-start pt-20 sm:pt-24 pb-4 px-6 sm:px-8 lg:px-12 overflow-hidden z-10">
+      <div
+        ref={stageRef}
+        className="sticky top-0 h-[100svh] min-h-[100svh] w-full flex flex-col justify-start pt-20 sm:pt-24 pb-4 px-6 sm:px-8 lg:px-12 overflow-hidden z-10"
+      >
         <div className="max-w-7xl mx-auto w-full rtl:text-right ltr:text-left flex flex-col justify-between flex-1 min-h-0 py-2">
           
           {/* 1. Header: Chapter Marker & Minimal Editorial Index */}
@@ -328,30 +486,26 @@ export function AtmosphereSection() {
           <div className="lg:hidden flex flex-col justify-between space-y-4 my-auto">
             {/* Dominant Image Window */}
             <div className="relative aspect-[16/10] w-full overflow-hidden border border-white/15 shadow-lg bg-[#151F22]">
-              {ATMOSPHERE_SPACES.map((space, idx) => {
-                const tr = imageTransforms[idx];
-                return (
-                  <motion.div
-                    key={space.id}
-                    style={{
-                      opacity: tr.opacity,
-                      scale: tr.scale,
-                      y: tr.y,
-                    }}
-                    className="absolute inset-0 will-change-transform"
-                  >
-                    <Image
-                      src={space.image}
-                      alt={lang === "ar" ? space.titleAr : space.titleEn}
-                      fill
-                      sizes="100vw"
-                      priority={idx === 0}
-                      className="object-cover filter contrast-110 brightness-90"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                  </motion.div>
-                );
-              })}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeSpace.id}
+                  initial={{ opacity: 0, scale: 1.04 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="absolute inset-0 will-change-transform"
+                >
+                  <Image
+                    src={activeSpace.image}
+                    alt={lang === "ar" ? activeSpace.titleAr : activeSpace.titleEn}
+                    fill
+                    sizes="100vw"
+                    priority
+                    className="object-cover filter contrast-110 brightness-90"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                </motion.div>
+              </AnimatePresence>
 
               <div className="absolute top-3 rtl:right-3 ltr:left-3 z-10 px-2 py-0.5 bg-black/70 border border-white/10 text-[#EAE6DF] text-[9px] font-mono tracking-widest uppercase">
                 {lang === "ar" ? activeSpace.tag : (activeSpace.tagEn || activeSpace.tag)}

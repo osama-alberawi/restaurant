@@ -8,9 +8,19 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export function MenuSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const [activeCategoryId, setActiveCategoryId] = useState<MenuCategoryId>("starters");
+  const activeCategoryIdRef = useRef<MenuCategoryId>("starters");
+  const isProgrammaticScroll = useRef(false);
+  const isCoolingDown = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number; time: number } | null>(null);
   const { lang, t, formatNumber } = useLanguage();
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeCategoryIdRef.current = activeCategoryId;
+  }, [activeCategoryId]);
 
   // Unified calibrated scroll over the pinned track
   const { scrollYProgress } = useScroll({
@@ -26,14 +36,19 @@ export function MenuSection() {
   });
 
   // Map damped continuous scroll progress into category index across the pinned track
-  // 7 categories unfold smoothly across 0.0 -> 1.0
+  // On desktop, 7 categories unfold smoothly across 0.0 -> 1.0.
+  // On mobile (<1024px), continuous scrubbing is disabled so inertial swipe momentum never skips tabs.
   useMotionValueEvent(smoothProgress, "change", (latest) => {
+    if (isProgrammaticScroll.current) return;
+    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
+
     const total = MENU_CATEGORIES.length;
     const clampedRatio = Math.min(0.999, Math.max(0, latest));
     const catIndex = Math.min(total - 1, Math.max(0, Math.floor(clampedRatio * total)));
     const cat = MENU_CATEGORIES[catIndex];
-    if (cat && cat.id !== activeCategoryId) {
+    if (cat && cat.id !== activeCategoryIdRef.current) {
       setActiveCategoryId(cat.id);
+      activeCategoryIdRef.current = cat.id;
     }
   });
 
@@ -68,20 +83,175 @@ export function MenuSection() {
       ? MENU_CATEGORIES[activeCategoryIndex + 1]
       : null;
 
-  // Category selection via click (works on both desktop spine and mobile tabs)
-  const handleSelectCategory = (catId: MenuCategoryId) => {
+  // Discrete single-step category selector
+  const selectCategoryStep = (catId: MenuCategoryId, idx: number) => {
+    isCoolingDown.current = true;
+    setTimeout(() => {
+      isCoolingDown.current = false;
+    }, 450);
+
     setActiveCategoryId(catId);
-    const idx = MENU_CATEGORIES.findIndex((c) => c.id === catId);
-    if (idx !== -1 && containerRef.current) {
+    activeCategoryIdRef.current = catId;
+
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const containerTop = rect.top + scrollTop;
       const totalScrollable = containerRef.current.offsetHeight - window.innerHeight;
       const targetRatio = (idx + 0.5) / MENU_CATEGORIES.length;
       const targetY = containerTop + totalScrollable * targetRatio;
+
+      isProgrammaticScroll.current = true;
       window.scrollTo({ top: targetY, behavior: "smooth" });
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 500);
     }
   };
+
+  // Category selection via click (works on both desktop spine and mobile tabs)
+  const handleSelectCategory = (catId: MenuCategoryId) => {
+    const idx = MENU_CATEGORIES.findIndex((c) => c.id === catId);
+    if (idx !== -1) {
+      selectCategoryStep(catId, idx);
+    }
+  };
+
+  // Mobile swipe listener: Guarantees 1 swipe = exactly 1 tab transition
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (e.touches.length !== 1) return;
+      touchStartPos.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (!touchStartPos.current || !containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isPinned = rect.top <= 15 && rect.bottom >= window.innerHeight - 15;
+      if (!isPinned) return;
+
+      const deltaY = touchStartPos.current.y - e.touches[0].clientY;
+      const deltaX = touchStartPos.current.x - e.touches[0].clientX;
+
+      // Allow scrolling inside internal dishes list if it has scrollable overflow
+      const scrollable = (e.target as HTMLElement)?.closest?.(".overflow-y-auto") as HTMLElement | null;
+      if (scrollable && scrollable.scrollHeight > scrollable.clientHeight + 8) {
+        if (deltaY > 0 && scrollable.scrollTop + scrollable.clientHeight < scrollable.scrollHeight - 4) {
+          return;
+        }
+        if (deltaY < 0 && scrollable.scrollTop > 4) {
+          return;
+        }
+      }
+
+      // Check boundary conditions:
+      const currIdx = MENU_CATEGORIES.findIndex((c) => c.id === activeCategoryIdRef.current);
+      // If on first tab and dragging down (wanting to go to previous section)
+      if (currIdx === 0 && deltaY < -20) {
+        return;
+      }
+      // If on last tab and dragging up (wanting to go to next section)
+      if (currIdx === MENU_CATEGORIES.length - 1 && deltaY > 20) {
+        return;
+      }
+
+      // Intercept touch to prevent multi-tab inertial window scrolling
+      if (Math.abs(deltaY) > 8 || Math.abs(deltaX) > 8) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) return;
+      if (!touchStartPos.current || !containerRef.current) return;
+
+      const start = touchStartPos.current;
+      touchStartPos.current = null;
+
+      if (isCoolingDown.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isPinned = rect.top <= 15 && rect.bottom >= window.innerHeight - 15;
+      if (!isPinned) return;
+
+      const endTouch = e.changedTouches[0];
+      const deltaY = start.y - endTouch.clientY; // positive = swipe UP (scroll DOWN / NEXT)
+      const deltaX = start.x - endTouch.clientX;
+      const MIN_SWIPE = 35;
+
+      const isVertical = Math.abs(deltaY) >= MIN_SWIPE && Math.abs(deltaY) > Math.abs(deltaX);
+      const isHorizontal = Math.abs(deltaX) >= MIN_SWIPE && Math.abs(deltaX) >= Math.abs(deltaY);
+
+      const currIdx = MENU_CATEGORIES.findIndex((c) => c.id === activeCategoryIdRef.current);
+
+      if (isVertical) {
+        if (deltaY > MIN_SWIPE) {
+          // Swipe DOWN (Finger up) -> Transition to next tab by strictly 1 step
+          if (currIdx < MENU_CATEGORIES.length - 1) {
+            const nextCat = MENU_CATEGORIES[currIdx + 1];
+            selectCategoryStep(nextCat.id, currIdx + 1);
+          } else {
+            // Already at last tab -> Smooth scroll to Chapter 03 (Atmosphere)
+            isCoolingDown.current = true;
+            setTimeout(() => { isCoolingDown.current = false; }, 600);
+            const nextEl = document.getElementById("atmosphere");
+            if (nextEl) {
+              nextEl.scrollIntoView({ behavior: "smooth" });
+            }
+          }
+        } else if (deltaY < -MIN_SWIPE) {
+          // Swipe UP (Finger down) -> Transition to previous tab by strictly 1 step
+          if (currIdx > 0) {
+            const prevCat = MENU_CATEGORIES[currIdx - 1];
+            selectCategoryStep(prevCat.id, currIdx - 1);
+          } else {
+            // Already at first tab -> Smooth scroll to Chapter 01 (Philosophy)
+            isCoolingDown.current = true;
+            setTimeout(() => { isCoolingDown.current = false; }, 600);
+            const prevEl = document.getElementById("philosophy");
+            if (prevEl) {
+              prevEl.scrollIntoView({ behavior: "smooth" });
+            }
+          }
+        }
+      } else if (isHorizontal) {
+        // Horizontal swipe: left = next tab, right = prev tab
+        if (deltaX > MIN_SWIPE) {
+          if (currIdx < MENU_CATEGORIES.length - 1) {
+            const nextCat = MENU_CATEGORIES[currIdx + 1];
+            selectCategoryStep(nextCat.id, currIdx + 1);
+          }
+        } else if (deltaX < -MIN_SWIPE) {
+          if (currIdx > 0) {
+            const prevCat = MENU_CATEGORIES[currIdx - 1];
+            selectCategoryStep(prevCat.id, currIdx - 1);
+          }
+        }
+      }
+    };
+
+    stage.addEventListener("touchstart", onTouchStart, { passive: true });
+    stage.addEventListener("touchmove", onTouchMove, { passive: false });
+    stage.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      stage.removeEventListener("touchstart", onTouchStart);
+      stage.removeEventListener("touchmove", onTouchMove);
+      stage.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
 
   // Format price as JOD with 2 decimals
   const formatPrice = (price: number) => {
@@ -97,7 +267,10 @@ export function MenuSection() {
       className="relative w-full h-[280vh] bg-[#0E1416] text-[#EAE6DF]"
     >
       {/* Pinned Spatial Viewport: Sits cleanly below floating navbar on all window heights */}
-      <div className="sticky top-0 h-[100svh] min-h-[100svh] w-full relative overflow-hidden flex flex-col justify-between pt-16 sm:pt-20 lg:pt-24 pb-4 sm:pb-5 px-4 sm:px-8 xl:px-14">
+      <div
+        ref={stageRef}
+        className="sticky top-0 h-[100svh] min-h-[100svh] w-full relative overflow-hidden flex flex-col justify-between pt-16 sm:pt-20 lg:pt-24 pb-4 sm:pb-5 px-4 sm:px-8 xl:px-14"
+      >
         
         {/* Active Editorial Monograph Container */}
         <motion.div
