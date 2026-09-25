@@ -151,9 +151,9 @@ export function RomanticEasterEgg() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="text-xs text-[#EAE6DF]/80 font-light leading-relaxed"
+                className="text-sm text-[#EAE6DF] font-medium leading-relaxed mt-1"
               >
-                أنتِ النكهة الأجمل والأثمن في كل تفاصيل هذا المكان.
+                بين كل هالجمال عيونك هي أكثر إشي بحبه ❤️
               </motion.p>
             </div>
 
