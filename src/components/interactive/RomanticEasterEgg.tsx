@@ -72,7 +72,7 @@ export function RomanticEasterEgg() {
   };
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 sm:bottom-8 sm:left-8 pointer-events-auto select-none">
+    <div className="fixed bottom-5 left-5 z-[9999] sm:bottom-8 sm:left-8 pointer-events-auto select-none">
       {/* Particle Explosion Canvas Overlay (does not block clicks) */}
       <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
         <AnimatePresence>
