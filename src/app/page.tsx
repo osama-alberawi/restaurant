@@ -12,6 +12,7 @@ import { ChefSection } from "@/components/sections/ChefSection";
 import { VisitSection } from "@/components/sections/VisitSection";
 import { Footer } from "@/components/layout/Footer";
 import { ReservationModal } from "@/components/interactive/ReservationModal";
+import { RomanticEasterEgg } from "@/components/interactive/RomanticEasterEgg";
 
 export default function HomePage() {
   const activeState = useActiveSection();
@@ -78,6 +79,9 @@ export default function HomePage() {
         isOpen={isReservationOpen}
         onClose={() => setIsReservationOpen(false)}
       />
+
+      {/* Secret Romantic Easter Egg */}
+      <RomanticEasterEgg />
     </div>
   );
 }
